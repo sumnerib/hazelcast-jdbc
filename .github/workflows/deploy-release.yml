@@ -21,7 +21,8 @@ env:
 
 jobs:
   do-release:
-    if: github.repository_owner == 'hazelcast'
+    #    if: github.repository_owner == 'hazelcast'
+    if: github.repository_owner == 'sumnerib'
     runs-on: ubuntu-latest
     services:
       hazelcast:
@@ -60,11 +61,15 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
+      #      - name: Prepare Deployment
+      #        run: |
+      #          mvn versions:set -B -DgenerateBackupPoms=false -DnewVersion=${{ github.event.inputs.release-version }}
+      #          git commit -am "Set version to ${{ github.event.inputs.release-version }}"
+      #          git tag v${{ github.event.inputs.release-version }}
+      #          mvn clean install -V -B
       - name: Prepare Deployment
         run: |
           mvn versions:set -B -DgenerateBackupPoms=false -DnewVersion=${{ github.event.inputs.release-version }}
-          git commit -am "Set version to ${{ github.event.inputs.release-version }}"
-          git tag v${{ github.event.inputs.release-version }}
           mvn clean install -V -B
 
       - name: Build and run smoke test
@@ -77,35 +82,35 @@ jobs:
           mvn clean package -V -B -Psmoke-test-ee -DskipTests
           java -ea -cp smoke-test/target/smoke-test-${{ github.event.inputs.release-version }}.jar:hazelcast-jdbc-enterprise/target/hazelcast-jdbc-enterprise-${{ github.event.inputs.release-version }}.jar com.hazelcast.smoke.test.SmokeTestDriver 6702 $EE_CLUSTER_NAME
 
-      - name: Deploy EE with Maven
-        run: mvn -f hazelcast-jdbc-enterprise -V -B deploy -Djdbc-release -DskipTests -DskipStaging
-        env:
-          MAVEN_USERNAME: ${{ secrets.JFROG_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-
-      - name: Deploy OS with Maven
-        run: mvn -V -B deploy -Djdbc-release -DskipTests
-        env:
-          MAVEN_USERNAME: ${{ secrets.SONATYPE_OSS_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.SONATYPE_OSS_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-
-      - name: Finish Deployment
-        run: |
-          mvn versions:set -B -DgenerateBackupPoms=false -DnewVersion=${{ github.event.inputs.next-snapshot-version }}
-          git commit -am "Set version to ${{ github.event.inputs.next-snapshot-version }}"
-          git push origin v${{ github.event.inputs.release-version }}
-          if [ -n "${{ github.event.inputs.release-branch }}" ]; then
-            git push origin "${{ github.event.inputs.release-branch }}"
-          else
-            git push
-          fi
-
-      - name: Upload OS binaries to the GitHub release
-        uses: svenstaro/upload-release-action@7319e4733ec7a184d739a6f412c40ffc339b69c7
-        with:
-          file: hazelcast-jdbc/target/hazelcast-jdbc-*.jar
-          file_glob: true
-          tag: v${{ github.event.inputs.release-version }}
-          overwrite: true
+#      - name: Deploy EE with Maven
+#        run: mvn -f hazelcast-jdbc-enterprise -V -B deploy -Djdbc-release -DskipTests -DskipStaging
+#        env:
+#          MAVEN_USERNAME: ${{ secrets.JFROG_USERNAME }}
+#          MAVEN_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
+#          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+#
+#      - name: Deploy OS with Maven
+#        run: mvn -V -B deploy -Djdbc-release -DskipTests
+#        env:
+#          MAVEN_USERNAME: ${{ secrets.SONATYPE_OSS_USERNAME }}
+#          MAVEN_PASSWORD: ${{ secrets.SONATYPE_OSS_PASSWORD }}
+#          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+#
+#      - name: Finish Deployment
+#        run: |
+#          mvn versions:set -B -DgenerateBackupPoms=false -DnewVersion=${{ github.event.inputs.next-snapshot-version }}
+#          git commit -am "Set version to ${{ github.event.inputs.next-snapshot-version }}"
+#          git push origin v${{ github.event.inputs.release-version }}
+#          if [ -n "${{ github.event.inputs.release-branch }}" ]; then
+#            git push origin "${{ github.event.inputs.release-branch }}"
+#          else
+#            git push
+#          fi
+#
+#      - name: Upload OS binaries to the GitHub release
+#        uses: svenstaro/upload-release-action@7319e4733ec7a184d739a6f412c40ffc339b69c7
+#        with:
+#          file: hazelcast-jdbc/target/hazelcast-jdbc-*.jar
+#          file_glob: true
+#          tag: v${{ github.event.inputs.release-version }}
+#          overwrite: true
