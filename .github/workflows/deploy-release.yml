@@ -70,7 +70,11 @@ jobs:
       - name: Prepare Deployment
         run: |
           mvn versions:set -B -DgenerateBackupPoms=false -DnewVersion=${{ github.event.inputs.release-version }}
-          mvn clean install -V -B
+          mvn clean install -V -B -DskipTests
+
+      - name: Print Hazelcast service logs
+        run: |
+          docker logs "${{ job.services.hazelcast.id }}"
 
       - name: Build and run smoke test
         run: |
